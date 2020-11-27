@@ -20,6 +20,7 @@
 
 
 #include <string>
+#include <stdio.h>
 
 #include <gazebo/common/common.hh>
 #include <gazebo/common/Plugin.hh>
@@ -90,5 +91,7 @@ class GazeboMultirotorBasePlugin : public ModelPlugin {
 
   transport::NodePtr node_handle_;
   transport::PublisherPtr motor_pub_;
+
+  FILE *fp;
 };
 }

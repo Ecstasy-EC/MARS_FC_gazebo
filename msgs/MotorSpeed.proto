@@ -3,5 +3,6 @@ package mav_msgs.msgs;
 
 message MotorSpeed
 {
-  repeated float   motor_speed  = 1 [packed=true];
+  required int64   time_usec    = 1;
+  repeated float   motor_speed  = 2 [packed=true];
 }

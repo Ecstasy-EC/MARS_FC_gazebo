@@ -43,7 +43,7 @@ void GazeboMultirotorBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr 
   node_handle_ = transport::NodePtr(new transport::Node());
   node_handle_->Init(namespace_);
   // FIXME: Commented out to prevent warnings about queue limit reached.
-  //motor_pub_ = node_handle_->Advertise<mav_msgs::msgs::MotorSpeed>("~/" + model_->GetName() + motor_pub_topic_, 1);
+  motor_pub_ = node_handle_->Advertise<mav_msgs::msgs::MotorSpeed>("~/" + model_->GetName() + motor_pub_topic_, 250);
 
 
   frame_id_ = link_name_;
@@ -71,6 +71,11 @@ void GazeboMultirotorBasePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr 
       motor_joints_.insert(MotorNumberToJointPair(motor_number, joint));
     }
   }
+
+  // Manual Logger, to be deleted later.
+  fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/motor_speed_0.csv","w",stdout);
+  printf("timestamp,motorspeed_0,motor_speed_1,motor_speed_2,motor_speed_3\n");
+  fclose(stdout);
 }
 
 // This gets called by the world update start event.
@@ -83,14 +88,20 @@ void GazeboMultirotorBasePlugin::OnUpdate(const common::UpdateInfo& _info) {
 #endif
   mav_msgs::msgs::MotorSpeed msg;
   MotorNumberToJointMap::iterator m;
+  fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/motor_speed_0.csv","a",stdout);
+  printf("%d",int(now.Double() * 1e6));
+  msg.set_time_usec(now.Double() * 1e6);
   for (m = motor_joints_.begin(); m != motor_joints_.end(); ++m) {
     double motor_rot_vel = m->second->GetVelocity(0) * rotor_velocity_slowdown_sim_;
     msg.add_motor_speed(motor_rot_vel);
+    printf(",%f",std::abs(motor_rot_vel));
   }
+  printf("\n");
   // motor_pub_->WaitForConnection();
   // Add time header
   // FIXME: Commented out to prevent warnings about queue limit reached.
-  //motor_pub_->Publish(msg);
+  motor_pub_->Publish(msg);
+  fclose(stdout);
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboMultirotorBasePlugin);

@@ -182,6 +182,13 @@ void GazeboImuPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   // TODO(nikolicj) incorporate steady-state covariance of bias process
   gyroscope_bias_.setZero();
   accelerometer_bias_.setZero();
+
+  imu_fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/gazebo_imu_0.csv","w",stdout);
+  printf("timestamp,acc_x,acc_y,acc_z\n");
+  fclose(stdout);
+  imu_fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/imu_gt_0.csv","w",stdout);
+  printf("timestamp,acc_x,acc_y,acc_z,omega_x,omega_y,omega_z\n");
+  fclose(stdout);
 }
 
 /// \brief This function adds noise to acceleration and angular rates for
@@ -295,6 +302,9 @@ void GazeboImuPlugin::OnUpdate(const common::UpdateInfo& _info) {
                                      angular_vel_I.Y(),
                                      angular_vel_I.Z());
 
+  imu_fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/imu_gt_0.csv","a",stdout);
+  printf("%d,%f,%f,%f,%f,%f,%f\n",int(current_time.Double() * 1e6),linear_acceleration_I(0),linear_acceleration_I(1),linear_acceleration_I(2),angular_velocity_I(0),angular_velocity_I(1),angular_velocity_I(2));
+  fclose(stdout);
   addNoise(&linear_acceleration_I, &angular_velocity_I, dt);
 
   // Copy Eigen::Vector3d to gazebo::msgs::Vector3d
@@ -308,7 +318,9 @@ void GazeboImuPlugin::OnUpdate(const common::UpdateInfo& _info) {
   angular_velocity->set_x(angular_velocity_I[0]);
   angular_velocity->set_y(angular_velocity_I[1]);
   angular_velocity->set_z(angular_velocity_I[2]);
-
+  imu_fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/gazebo_imu_0.csv","a",stdout);
+  printf("%d,%f,%f,%f\n",int(current_time.Double() * 1e6),linear_acceleration_I(0),linear_acceleration_I(1),linear_acceleration_I(2));
+  fclose(stdout);
   // Fill IMU message.
   // ADD HEaders
   // imu_message_.header.stamp.sec = current_time.sec;

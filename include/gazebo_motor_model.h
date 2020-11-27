@@ -147,6 +147,7 @@ class GazeboMotorModel : public MotorModel, public ModelPlugin {
 
   ignition::math::Vector3d wind_vel_;
 
+  physics::WorldPtr world_;
   physics::ModelPtr model_;
   physics::JointPtr joint_;
   common::PID pid_;
@@ -163,6 +164,8 @@ class GazeboMotorModel : public MotorModel, public ModelPlugin {
   void WindVelocityCallback(const boost::shared_ptr<const physics_msgs::msgs::Wind> &msg);
 
   std::unique_ptr<FirstOrderFilter<double>>  rotor_velocity_filter_;
+
+  FILE *fp;
 /*
   // Protobuf test
   std::string motor_test_sub_topic_;

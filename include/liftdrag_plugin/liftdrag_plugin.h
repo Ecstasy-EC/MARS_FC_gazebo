@@ -146,6 +146,7 @@ namespace gazebo
     private: std::string namespace_;
     private: std::string wind_sub_topic_ = "world_wind";
     private: ignition::math::Vector3d wind_vel_;
+    private: FILE *fp;
   };
 }
 #endif

@@ -54,7 +54,7 @@ LiftDragPlugin::LiftDragPlugin() : cla(1.0), cda(0.01), cma(0.0), rho(1.2041)
   this->cmaStall = 0.0;
 
   /// how much to change CL per every radian of the control joint value
-  this->controlJointRadToCL = 4.0;
+  this->controlJointRadToCL = 0.0;
 
   // How much Cm changes with a change in control surface deflection angle
   this->cm_delta = 0.0;
@@ -153,10 +153,8 @@ void LiftDragPlugin::Load(physics::ModelPtr _model,
       this->updateConnection = event::Events::ConnectWorldUpdateBegin(
           boost::bind(&LiftDragPlugin::OnUpdate, this));
     }
-
-    
   }
-  
+
   if (_sdf->HasElement("robotNamespace"))
   {
     namespace_ = _sdf->GetElement("robotNamespace")->Get<std::string>();
@@ -183,11 +181,26 @@ void LiftDragPlugin::Load(physics::ModelPtr _model,
 
   if (_sdf->HasElement("control_joint_rad_to_cl"))
     this->controlJointRadToCL = _sdf->Get<double>("control_joint_rad_to_cl");
+
+  fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/airangle_0.csv","w",stdout);
+  printf("timestamp,alpha,sweepangle,alpha_stall,lift_value,drag_value\n");
+  fclose(stdout);
+  fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/lift_0.csv","w",stdout);
+  printf("timestamp,alpha_stall,lift_x,lift_y,lift_z\n");
+  fclose(stdout);
+  fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/drag_0.csv","w",stdout);
+  printf("timestamp,alpha_stall,drag_x,drag_y,drag_z\n");
+  fclose(stdout);
 }
 
 /////////////////////////////////////////////////
 void LiftDragPlugin::OnUpdate()
 {
+  #if GAZEBO_MAJOR_VERSION >= 9
+    common::Time now = this->world->SimTime();
+  #else
+    common::Time now = this->world->GetSimTime();
+  #endif
   GZ_ASSERT(this->link, "Link was NULL");
   // get linear velocity at cp in inertial frame
 #if GAZEBO_MAJOR_VERSION >= 9
@@ -198,8 +211,18 @@ void LiftDragPlugin::OnUpdate()
   ignition::math::Vector3d velI = vel;
   velI.Normalize();
 
-  if (vel.Length() <= 0.01)
+  if (vel.Length() <= 0.01){
+    fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/airangle_0.csv","a",stdout);
+    printf("%d,%f,%f,%f,%f,%f,%f\n",int(now.Double() * 1e6),0.0,0.0,this->alphaStall, 0.0, 0.0, this->controlJointRadToCL);
+    fclose(stdout);
+    fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/lift_0.csv","a",stdout);
+    printf("%d,%f,%f,%f,%f\n",int(now.Double() * 1e6), this->alphaStall, 0.0, 0.0, 0.0);
+    fclose(stdout);
+    fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/drag_0.csv","a",stdout);
+    printf("%d,%f,%f,%f,%f\n",int(now.Double() * 1e6), this->alphaStall, 0.0, 0.0, 0.0);
+    fclose(stdout);
     return;
+  }
 
   // pose of body
 #if GAZEBO_MAJOR_VERSION >= 9
@@ -213,6 +236,15 @@ void LiftDragPlugin::OnUpdate()
 
   if (forwardI.Dot(vel) <= 0.0){
     // Only calculate lift or drag if the wind relative velocity is in the same direction
+    fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/airangle_0.csv","a",stdout);
+    printf("%d,%f,%f,%f,%f,%f,%f\n",int(now.Double() * 1e6),0.0,0.0,this->alphaStall, 0.0, 0.0, this->controlJointRadToCL);
+    fclose(stdout);
+    fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/lift_0.csv","a",stdout);
+    printf("%d,%f,%f,%f,%f\n",int(now.Double() * 1e6), this->alphaStall, 0.0, 0.0, 0.0);
+    fclose(stdout);
+    fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/drag_0.csv","a",stdout);
+    printf("%d,%f,%f,%f,%f\n",int(now.Double() * 1e6), this->alphaStall, 0.0, 0.0, 0.0);
+    fclose(stdout);
     return;
   }
 
@@ -327,7 +359,6 @@ void LiftDragPlugin::OnUpdate()
     cl = cl + this->controlJointRadToCL * controlAngle;
     /// \TODO: also change cd
   }
-
   // compute lift force at cp
   ignition::math::Vector3d lift = cl * q * this->area * liftI;
 
@@ -425,6 +456,15 @@ void LiftDragPlugin::OnUpdate()
   force.Correct();
   this->cp.Correct();
   moment.Correct();
+  fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/airangle_0.csv","a",stdout);
+  printf("%d,%f,%f,%f,%f,%f,%f\n",int(now.Double() * 1e6),acos(cosAlpha),this->sweep,this->alphaStall,cl * q * this->area,cd * q * this->area, q);
+  fclose(stdout);
+  fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/lift_0.csv","a",stdout);
+  printf("%d,%f,%f,%f,%f\n",int(now.Double() * 1e6),this->alphaStall, lift.X(),lift.Y(),lift.Z());
+  fclose(stdout);
+  fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/drag_0.csv","a",stdout);
+  printf("%d,%f,%f,%f,%f\n",int(now.Double() * 1e6),this->alphaStall, drag.X(),drag.Y(),drag.Z());
+  fclose(stdout);
 
   // apply forces at cg (with torques for position shift)
   this->link->AddForceAtRelativePosition(force, this->cp);

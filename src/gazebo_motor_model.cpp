@@ -39,7 +39,7 @@ void GazeboMotorModel::Publish() {
 
 void GazeboMotorModel::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   model_ = _model;
-
+  world_ = model_->GetWorld();
   namespace_.clear();
 
   if (_sdf->HasElement("robotNamespace"))
@@ -158,6 +158,10 @@ void GazeboMotorModel::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
 
   // Create the first order filter.
   rotor_velocity_filter_.reset(new FirstOrderFilter<double>(time_constant_up_, time_constant_down_, ref_motor_rot_vel_));
+
+  fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/motor_force_0.csv","w",stdout);
+  printf("timestamp,motor_number,motor_force,air_drag_x,air_drag_y,air_drag_z\n");
+  fclose(stdout);
 }
 
 // Protobuf test
@@ -193,6 +197,11 @@ void GazeboMotorModel::MotorFailureCallback(const boost::shared_ptr<const msgs::
 }
 
 void GazeboMotorModel::UpdateForcesAndMoments() {
+  #if GAZEBO_MAJOR_VERSION >= 9
+    common::Time now = world_->SimTime();
+  #else
+    common::Time now = world_->GetSimTime();
+  #endif
   motor_rot_vel_ = joint_->GetVelocity(0);
   if (motor_rot_vel_ / (2 * M_PI) > 1 / (2 * sampling_time_)) {
     gzerr << "Aliasing on motor [" << motor_number_ << "] might occur. Consider making smaller simulation time steps or raising the rotor_velocity_slowdown_sim_ param.\n";
@@ -217,6 +226,7 @@ void GazeboMotorModel::UpdateForcesAndMoments() {
   scalar = ignition::math::clamp(scalar, 0.0, 1.0);
   // Apply a force to the link.
   link_->AddRelativeForce(ignition::math::Vector3d(0, 0, force * scalar));
+  // Add motor force log
 
   // Forces from Philppe Martin's and Erwan Salaün's
   // 2010 IEEE Conference on Robotics and Automation paper
@@ -232,6 +242,9 @@ void GazeboMotorModel::UpdateForcesAndMoments() {
   ignition::math::Vector3d air_drag = -std::abs(real_motor_velocity) * rotor_drag_coefficient_ * body_velocity_perpendicular;
   // Apply air_drag to link.
   link_->AddForce(air_drag);
+  fp = freopen("/home/ecstasy/Flightlog/Hong Hu/FlightLogCSV/motor_force_0.csv","a",stdout);
+  printf("%d,%d,%f,%f,%f,%f\n",int(now.Double() * 1e6),int(motor_number_),force * scalar,air_drag.X(),air_drag.Y(),air_drag.Z());
+  fclose(stdout);
   // Moments
   // Getting the parent link, such that the resulting torques can be applied to it.
   physics::Link_V parent_links = link_->GetParentJointsLinks();

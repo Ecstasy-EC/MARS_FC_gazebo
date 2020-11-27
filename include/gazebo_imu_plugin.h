@@ -150,5 +150,7 @@ class GazeboImuPlugin : public ModelPlugin {
   ImuParameters imu_parameters_;
 
   uint64_t seq_ = 0;
+
+  FILE *imu_fp;
 };
 }

@@ -481,7 +481,6 @@ void GazeboMavlinkInterface::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf
   else {
     gzerr << "Unkown protocol version! Using v" << protocol_version_ << "by default \n";
   }
-
   mavlink_interface_->Load();
 }
 
@@ -1090,6 +1089,7 @@ void GazeboMavlinkInterface::handle_actuator_controls() {
   // Read Input References
   input_reference_.resize(n_out_max);
 
+  // Add log for timestamp align
   Eigen::VectorXd actuator_controls = mavlink_interface_->GetActuatorControls();
   if (actuator_controls.size() < n_out_max) return; //TODO: Handle this properly
   for (int i = 0; i < input_reference_.size(); i++) {
